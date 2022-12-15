@@ -5,29 +5,32 @@ using NPTicket.Types;
 
 namespace NPTicket;
 
+#nullable disable
+
 [SuppressMessage("ReSharper", "NotAccessedField.Global")]
 [SuppressMessage("ReSharper", "UnusedMember.Global")]
 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+[SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
 public class Ticket
 {
     private Ticket() {}
     
-    public TicketVersion Version;
-    public string SerialId;
-    public uint IssuerId;
+    public TicketVersion Version { get; set; }
+    public string SerialId { get; set; }
+    public uint IssuerId { get; set; }
     
-    public ulong IssuedDate;
-    public ulong ExpiryDate;
+    public ulong IssuedDate { get; set; }
+    public ulong ExpiryDate { get; set; }
 
-    public ulong UserId;
-    public string Username;
+    public ulong UserId { get; set; }
+    public string Username { get; set; }
 
-    public string Country;
-    public string Domain;
+    public string Country { get; set; }
+    public string Domain { get; set; }
 
-    public string TitleId;
+    public string TitleId { get; set; }
     
-    public uint Status;
+    public uint Status { get; set; }
 
     [Pure]
     public static Ticket FromBytes(byte[] data)
