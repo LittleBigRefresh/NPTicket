@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Text.RegularExpressions;
 using NPTicket.Reader;
 using NPTicket.Types;
 
@@ -28,9 +29,13 @@ public class Ticket
     public string Country { get; set; }
     public string Domain { get; set; }
 
+    public string ServiceId { get; set; }
     public string TitleId { get; set; }
     
     public uint Status { get; set; }
+
+    // TODO: Use GeneratedRegex, this is not in netstandard yet
+    public static Regex ServiceIdRegex = new("(?<=-)[A-Z0-9]{9}(?=_)");
 
     [Pure]
     public static Ticket FromBytes(byte[] data)
@@ -60,10 +65,11 @@ public class Ticket
         ticket.Country = reader.ReadTicketString(); // No I am not going to brazil
         ticket.Domain = reader.ReadTicketString();
 
-        ticket.TitleId = reader.ReadTicketString();
+        ticket.ServiceId = reader.ReadTicketString();
+        ticket.TitleId = ServiceIdRegex.Matches(ticket.ServiceId)[0].ToString();
 
         ticket.Status = reader.ReadUInt32();
-
+        
         return ticket;
     }
 }
