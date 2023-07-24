@@ -1,7 +1,6 @@
 using System.Buffers.Binary;
 using System.Text;
 using NPTicket.Types;
-using NPTicket.Verification;
 
 namespace NPTicket.Reader;
 
@@ -33,31 +32,51 @@ internal class TicketReader : BinaryReader
         return ReadUInt16(); // Ticket length
     }
 
-    internal TicketSection ReadTicketSectionHeader()
+    internal TicketDataSection ReadTicketSectionHeader()
     {
         this.ReadByte(); // Skip first byte of type (which is a short)
 
-        TicketSectionType type = (TicketSectionType)this.ReadByte();
+        TicketDataSectionType type = (TicketDataSectionType)this.ReadByte();
         ushort length = this.ReadUInt16();
         long position = this.BaseStream.Position;
 
-        return new TicketSection(type, length, (uint)position);
+        return new TicketDataSection(type, length, position);
     }
 
-    private TicketDataHeader ReadTicketDataHeader() => new(ReadUInt16(), ReadUInt16());
-
-    private byte[] ReadTicketByteArray() => ReadBytes(ReadTicketDataHeader().Length);
-    internal string ReadTicketString() => Encoding.Default.GetString(ReadTicketByteArray()).TrimEnd('\0');
-
-    internal uint ReadTicketUInt32()
+    private TicketData ReadTicketData(TicketDataType expectedType)
     {
-        ReadTicketDataHeader();
+        TicketData data = new TicketData((TicketDataType)ReadUInt16(), ReadUInt16());
+        if (data.Type != expectedType && expectedType != TicketDataType.Empty)
+            throw new FormatException($"Expected data type to be {expectedType}, was really {data.Type} ({(int)data.Type})");
+        
+        return data;
+    }
+
+    internal byte[] ReadTicketBinaryData(TicketDataType type = TicketDataType.Binary)
+        => ReadBytes(ReadTicketData(type).Length);
+    internal string ReadTicketStringData(TicketDataType type = TicketDataType.String)
+        => Encoding.Default.GetString(ReadTicketBinaryData(type)).TrimEnd('\0');
+
+    internal uint ReadTicketUInt32Data()
+    {
+        ReadTicketData(TicketDataType.UInt32);
         return ReadUInt32();
     }
     
-    internal ulong ReadTicketUInt64()
+    internal ulong ReadTicketUInt64Data()
     {
-        ReadTicketDataHeader();
+        ReadTicketData(TicketDataType.UInt64);
         return ReadUInt64();
+    }
+    
+    internal DateTimeOffset ReadTicketTimestampData()
+    {
+        ReadTicketData(TicketDataType.Timestamp);
+        return DateTimeOffset.FromUnixTimeMilliseconds((long)ReadUInt64());
+    }
+
+    internal void SkipTicketEmptyData(int sections = 1)
+    {
+        for (int i = 0; i < sections; i++) ReadTicketData(TicketDataType.Empty);
     }
 }

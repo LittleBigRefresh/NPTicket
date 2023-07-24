@@ -9,12 +9,13 @@ namespace NPTicket.Verification;
 
 public class TicketVerifier
 {
-    private Ticket _ticket;
-    // private ECPublicKeyParameters _publicKey;
-    private ISigner _signer;
+    private readonly Ticket _ticket;
+    private readonly byte[] _ticketData;
+    private readonly ISigner _signer;
 
-    public TicketVerifier(Ticket ticket, ITicketSigningKey key)
+    public TicketVerifier(byte[] ticketData, Ticket ticket, ITicketSigningKey key)
     {
+        this._ticketData = ticketData;
         this._ticket = ticket;
 
         X9ECParameters xParams = ECNamedCurveTable.GetByName(key.CurveTable);
@@ -23,11 +24,12 @@ public class TicketVerifier
 
         ECPublicKeyParameters publicKey = new ECPublicKeyParameters(ecPoint, domainParams);
         this._signer = SignerUtilities.GetSigner(key.HashAlgorithm + "withECDSA");
-        _signer.Init(false, publicKey);
+        this._signer.Init(false, publicKey);
     }
 
     public bool IsTicketValid()
     {
-        return false;
+        this._signer.BlockUpdate(this._ticketData, this._ticket.BodySection.Position, this._ticket.BodySection.Length);
+        return this._signer.VerifySignature(this._ticketData);
     }
 }

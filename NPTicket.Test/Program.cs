@@ -8,6 +8,6 @@ Ticket ticket = Ticket.ReadFromBytes(ticketData);
 
 Console.WriteLine(JsonSerializer.Serialize(ticket));
 
-TicketVerifier verifier = new(ticket, RpcnSigningKey.Instance);
+TicketVerifier verifier = new(ticketData, ticket, RpcnSigningKey.Instance);
 Console.WriteLine(JsonSerializer.Serialize(verifier));
 Console.WriteLine(verifier.IsTicketValid());

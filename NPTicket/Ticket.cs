@@ -24,8 +24,8 @@ public class Ticket
     public string SerialId { get; set; }
     public uint IssuerId { get; set; }
     
-    public ulong IssuedDate { get; set; }
-    public ulong ExpiryDate { get; set; }
+    public DateTimeOffset IssuedDate { get; set; }
+    public DateTimeOffset ExpiryDate { get; set; }
 
     public ulong UserId { get; set; }
     public string Username { get; set; }
@@ -38,7 +38,10 @@ public class Ticket
     
     public uint Status { get; set; }
     public ushort TicketLength { get; set; }
-    public TicketSection BodySection { get; set; }
+    public TicketDataSection BodySection { get; set; }
+    
+    public string SignatureIdentifier { get; set; }
+    public byte[] SignatureData { get; set; }
 
     // TODO: Use GeneratedRegex, this is not in netstandard yet
     private static readonly Regex ServiceIdRegex = new("(?<=-)[A-Z0-9]{9}(?=_)", RegexOptions.Compiled);
@@ -68,29 +71,42 @@ public class Ticket
 
         ticket.BodySection = reader.ReadTicketSectionHeader();
 
-        if (ticket.BodySection.Type != TicketSectionType.Body)
+        if (ticket.BodySection.Type != TicketDataSectionType.Body)
         {
-            throw new FormatException($"Expected first section to be {nameof(TicketSectionType.Body)}, " +
+            throw new FormatException($"Expected first section to be {nameof(TicketDataSectionType.Body)}, " +
                                       $"was really {ticket.BodySection.Type} ({(int)ticket.BodySection.Type})");
         }
 
-        ticket.SerialId = reader.ReadTicketString();
+        ticket.SerialId = reader.ReadTicketStringData(TicketDataType.Binary);
 
-        ticket.IssuerId = reader.ReadTicketUInt32();
+        ticket.IssuerId = reader.ReadTicketUInt32Data();
 
-        ticket.IssuedDate = reader.ReadTicketUInt64();
-        ticket.ExpiryDate = reader.ReadTicketUInt64();
+        ticket.IssuedDate = reader.ReadTicketTimestampData();
+        ticket.ExpiryDate = reader.ReadTicketTimestampData();
 
-        ticket.UserId = reader.ReadTicketUInt64();
-        ticket.Username = reader.ReadTicketString();
+        ticket.UserId = reader.ReadTicketUInt64Data();
+        ticket.Username = reader.ReadTicketStringData();
 
-        ticket.Country = reader.ReadTicketString(); // No I am not going to brazil
-        ticket.Domain = reader.ReadTicketString();
+        ticket.Country = reader.ReadTicketStringData(TicketDataType.Binary); // No I am not going to brazil
+        ticket.Domain = reader.ReadTicketStringData();
 
-        ticket.ServiceId = reader.ReadTicketString();
+        ticket.ServiceId = reader.ReadTicketStringData(TicketDataType.Binary);
         ticket.TitleId = ServiceIdRegex.Matches(ticket.ServiceId)[0].ToString();
 
         ticket.Status = reader.ReadUInt32();
+        
+        // Skip padding section in ticket
+        reader.SkipTicketEmptyData(3);
+        
+        TicketDataSection footer = reader.ReadTicketSectionHeader();
+        if (footer.Type != TicketDataSectionType.Footer)
+        {
+            throw new FormatException($"Expected last section to be {nameof(TicketDataSectionType.Footer)}, " +
+                                      $"was really {footer.Type} ({(int)footer.Type})");
+        }
+
+        ticket.SignatureIdentifier = reader.ReadTicketStringData(TicketDataType.Binary);
+        ticket.SignatureData = reader.ReadTicketBinaryData();
         
         return ticket;
     }
