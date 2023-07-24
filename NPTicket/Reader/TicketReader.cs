@@ -34,11 +34,11 @@ internal class TicketReader : BinaryReader
 
     internal TicketDataSection ReadTicketSectionHeader()
     {
+        long position = this.BaseStream.Position;
+        
         this.ReadByte(); // Skip first byte of type (which is a short)
-
         TicketDataSectionType type = (TicketDataSectionType)this.ReadByte();
         ushort length = this.ReadUInt16();
-        long position = this.BaseStream.Position;
 
         return new TicketDataSection(type, length, position);
     }
