@@ -12,8 +12,6 @@
         <Title>NPTicket</Title>
         <PackageId>NPTicket</PackageId>
         <Description>An open-source C# library for reading/verifying PSN authentication tickets.</Description>
-        <Version>2.0.0</Version>
-        <PackageVersion>2.0.0</PackageVersion>
         <RepositoryUrl>https://github.com/LittleBigRefresh/NPTicket</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageProjectUrl>https://github.com/LittleBigRefresh/NPTicket</PackageProjectUrl>

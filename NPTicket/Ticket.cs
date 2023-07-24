@@ -35,7 +35,7 @@ public class Ticket
     public uint Status { get; set; }
 
     // TODO: Use GeneratedRegex, this is not in netstandard yet
-    public static Regex ServiceIdRegex = new("(?<=-)[A-Z0-9]{9}(?=_)");
+    public static readonly Regex ServiceIdRegex = new("(?<=-)[A-Z0-9]{9}(?=_)");
 
     [Pure]
     public static Ticket FromBytes(byte[] data)
