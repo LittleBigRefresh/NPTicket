@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 using NPTicket.Types;
+using NPTicket.Verification;
 
 namespace NPTicket.Reader;
 
@@ -25,15 +26,22 @@ internal class TicketReader : BinaryReader
 
     internal TicketVersion ReadTicketVersion() => new((byte)(ReadByte() >> 4), ReadByte());
 
-    internal void SkipTicketHeader()
+    internal ushort ReadTicketHeader()
     {
         // Ticket header
         ReadBytes(4); // Header
-        ReadUInt16(); // Ticket length
-        
-        // Section header
-        ReadUInt16(); // Section Type
-        ReadUInt16(); // Section Length
+        return ReadUInt16(); // Ticket length
+    }
+
+    internal TicketSection ReadTicketSectionHeader()
+    {
+        this.ReadByte(); // Skip first byte of type (which is a short)
+
+        TicketSectionType type = (TicketSectionType)this.ReadByte();
+        ushort length = this.ReadUInt16();
+        long position = this.BaseStream.Position;
+
+        return new TicketSection(type, length, (uint)position);
     }
 
     private TicketDataHeader ReadTicketDataHeader() => new(ReadUInt16(), ReadUInt16());

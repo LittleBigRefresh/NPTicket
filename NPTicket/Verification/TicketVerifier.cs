@@ -19,7 +19,7 @@ public class TicketVerifier
 
         X9ECParameters xParams = ECNamedCurveTable.GetByName(key.CurveTable);
         ECDomainParameters domainParams = new(xParams.Curve, xParams.G, xParams.N, xParams.H, xParams.GetSeed());
-        ECPoint ecPoint = domainParams.Curve.CreatePoint(new BigInteger(key.X, 16), new BigInteger(key.Y, 16));
+        ECPoint ecPoint = domainParams.Curve.CreatePoint(new BigInteger(key.CurveX, 16), new BigInteger(key.CurveY, 16));
 
         ECPublicKeyParameters publicKey = new ECPublicKeyParameters(ecPoint, domainParams);
         this._signer = SignerUtilities.GetSigner(key.HashAlgorithm + "withECDSA");

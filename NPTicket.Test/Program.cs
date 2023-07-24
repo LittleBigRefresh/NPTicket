@@ -10,3 +10,4 @@ Console.WriteLine(JsonSerializer.Serialize(ticket));
 
 TicketVerifier verifier = new(ticket, RpcnSigningKey.Instance);
 Console.WriteLine(JsonSerializer.Serialize(verifier));
+Console.WriteLine(verifier.IsTicketValid());

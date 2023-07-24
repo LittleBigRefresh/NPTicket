@@ -1,8 +1,12 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using NPTicket.Reader;
 using NPTicket.Types;
+using NPTicket.Verification;
 
 namespace NPTicket;
 
@@ -33,9 +37,11 @@ public class Ticket
     public string TitleId { get; set; }
     
     public uint Status { get; set; }
+    public ushort TicketLength { get; set; }
+    public TicketSection BodySection { get; set; }
 
     // TODO: Use GeneratedRegex, this is not in netstandard yet
-    public static readonly Regex ServiceIdRegex = new("(?<=-)[A-Z0-9]{9}(?=_)", RegexOptions.Compiled);
+    private static readonly Regex ServiceIdRegex = new("(?<=-)[A-Z0-9]{9}(?=_)", RegexOptions.Compiled);
 
     [Pure]
     public static Ticket ReadFromBytes(byte[] data)
@@ -50,7 +56,23 @@ public class Ticket
         using TicketReader reader = new(stream);
 
         ticket.Version = reader.ReadTicketVersion();
-        reader.SkipTicketHeader();
+        ticket.TicketLength = reader.ReadTicketHeader();
+
+        // ticket version (2 bytes), header (4 bytes), ticket length (2 bytes) = 8 bytes
+        const int headerLength = sizeof(byte) + sizeof(byte) + sizeof(uint) + sizeof(ushort);
+        Debug.Assert(headerLength == 8);
+
+        long actualLength = stream.Length - headerLength;
+        if (ticket.TicketLength != actualLength)
+            throw new FormatException($"Expected ticket length to be {ticket.TicketLength} bytes, was {actualLength} bytes instead");
+
+        ticket.BodySection = reader.ReadTicketSectionHeader();
+
+        if (ticket.BodySection.Type != TicketSectionType.Body)
+        {
+            throw new FormatException($"Expected first section to be {nameof(TicketSectionType.Body)}, " +
+                                      $"was really {ticket.BodySection.Type} ({(int)ticket.BodySection.Type})");
+        }
 
         ticket.SerialId = reader.ReadTicketString();
 
