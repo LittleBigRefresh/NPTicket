@@ -35,16 +35,16 @@ public class Ticket
     public uint Status { get; set; }
 
     // TODO: Use GeneratedRegex, this is not in netstandard yet
-    public static readonly Regex ServiceIdRegex = new("(?<=-)[A-Z0-9]{9}(?=_)");
+    public static readonly Regex ServiceIdRegex = new("(?<=-)[A-Z0-9]{9}(?=_)", RegexOptions.Compiled);
 
     [Pure]
-    public static Ticket FromBytes(byte[] data)
+    public static Ticket ReadFromBytes(byte[] data)
     {
         using MemoryStream ms = new(data);
-        return FromStream(ms);
+        return ReadFromStream(ms);
     }
     
-    public static Ticket FromStream(Stream stream)
+    public static Ticket ReadFromStream(Stream stream)
     {
         Ticket ticket = new();
         using TicketReader reader = new(stream);
