@@ -43,12 +43,23 @@ public class TicketReader : BinaryReader
         {
             DetermineSectionFormat();
         }
+        
+        long unreadBytes = this.BaseStream.Length - this.BaseStream.Position;
+        if (unreadBytes != 0)
+        {
+            Console.WriteLine($"!!! Unread bytes: {unreadBytes} !!!");
+        }
     }
 
     private void DetermineSectionFormat()
     {
         TicketDataSection section = ReadTicketSectionHeader();
         Console.WriteLine($"  {section.Type} Section, length is {section.Length} @ offset {section.Position}");
+
+        if (section.Type == TicketDataSectionType.DateOfBirth)
+        {
+            this.BaseStream.Position += section.Length;
+        }
 
         int endSpot = section.Length + section.Position;
         while (this.BaseStream.Position <= endSpot)
@@ -60,15 +71,21 @@ public class TicketReader : BinaryReader
     private void DetermineData()
     {
         TicketData data = ReadTicketData(TicketDataType.Empty);
-        Console.WriteLine($"    {data.Type}, length is {data.Length}");
+        if ((ushort)data.Type >> 8 == 0x30) // if data type starts with section header
+        {
+            this.BaseStream.Position -= sizeof(ushort) * 2; // roll back read from data
+            DetermineSectionFormat(); // read the section
+            return;
+        }
         this.ReadBytes(data.Length);
+        Console.WriteLine($"    {data.Type}, length is {data.Length}");
     }
 
     internal TicketDataSection ReadTicketSectionHeader()
     {
         long position = this.BaseStream.Position;
-        
-        this.ReadByte(); // Skip first byte of type (which is a short)
+
+        if (this.ReadByte() != 0x30) throw new FormatException("Expected 0x30 for section header");
         TicketDataSectionType type = (TicketDataSectionType)this.ReadByte();
         ushort length = this.ReadUInt16();
 
