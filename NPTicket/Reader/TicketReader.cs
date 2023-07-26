@@ -4,9 +4,9 @@ using NPTicket.Types;
 
 namespace NPTicket.Reader;
 
-internal class TicketReader : BinaryReader
+public class TicketReader : BinaryReader
 {
-    internal TicketReader(Stream input) : base(input)
+    public TicketReader(Stream input) : base(input)
     {}
 
     #region Big Endian Shenanigans
@@ -30,6 +30,38 @@ internal class TicketReader : BinaryReader
         // Ticket header
         ReadBytes(4); // Header
         return ReadUInt16(); // Ticket length
+    }
+
+    public void DetermineTicketFormat()
+    {
+        TicketVersion version = ReadTicketVersion();
+        Console.Write($"Ticket version {version.Major}.{version.Minor}");
+        ushort length = ReadTicketHeader();
+        Console.WriteLine($", length is {length} bytes");
+
+        while (this.BaseStream.Position <= length)
+        {
+            DetermineSectionFormat();
+        }
+    }
+
+    private void DetermineSectionFormat()
+    {
+        TicketDataSection section = ReadTicketSectionHeader();
+        Console.WriteLine($"  {section.Type} Section, length is {section.Length} @ offset {section.Position}");
+
+        int endSpot = section.Length + section.Position;
+        while (this.BaseStream.Position <= endSpot)
+        {
+            DetermineData();
+        }
+    }
+
+    private void DetermineData()
+    {
+        TicketData data = ReadTicketData(TicketDataType.Empty);
+        Console.WriteLine($"    {data.Type}, length is {data.Length}");
+        this.ReadBytes(data.Length);
     }
 
     internal TicketDataSection ReadTicketSectionHeader()

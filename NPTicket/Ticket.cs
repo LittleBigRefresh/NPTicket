@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using NPTicket.Reader;
 using NPTicket.Types;
+using NPTicket.Types.Parsers;
 using NPTicket.Verification;
 
 namespace NPTicket;
@@ -44,7 +45,7 @@ public class Ticket
     public byte[] SignatureData { get; set; }
 
     // TODO: Use GeneratedRegex, this is not in netstandard yet
-    private static readonly Regex ServiceIdRegex = new("(?<=-)[A-Z0-9]{9}(?=_)", RegexOptions.Compiled);
+    internal static readonly Regex ServiceIdRegex = new("(?<=-)[A-Z0-9]{9}(?=_)", RegexOptions.Compiled);
 
     [Pure]
     public static Ticket ReadFromBytes(byte[] data)
@@ -77,32 +78,17 @@ public class Ticket
                                       $"was really {ticket.BodySection.Type} ({(int)ticket.BodySection.Type})");
         }
 
-        ticket.SerialId = reader.ReadTicketStringData(TicketDataType.Binary);
-
-        ticket.IssuerId = reader.ReadTicketUInt32Data();
-
-        ticket.IssuedDate = reader.ReadTicketTimestampData();
-        ticket.ExpiryDate = reader.ReadTicketTimestampData();
-
-        ticket.UserId = reader.ReadTicketUInt64Data();
-        ticket.Username = reader.ReadTicketStringData();
-
-        ticket.Country = reader.ReadTicketStringData(TicketDataType.Binary); // No I am not going to brazil
-        ticket.Domain = reader.ReadTicketStringData();
-
-        ticket.ServiceId = reader.ReadTicketStringData(TicketDataType.Binary);
-        ticket.TitleId = ServiceIdRegex.Matches(ticket.ServiceId)[0].ToString();
-
-        ticket.Status = reader.ReadUInt32();
-        
-        // Skip padding section in ticket
-        reader.SkipTicketEmptyData(3);
-        
-        TicketDataSection footer = reader.ReadTicketSectionHeader();
-        if (footer.Type != TicketDataSectionType.Footer)
+        if (ticket.Version is { Major: 2, Minor: 1 })
         {
-            throw new FormatException($"Expected last section to be {nameof(TicketDataSectionType.Footer)}, " +
-                                      $"was really {footer.Type} ({(int)footer.Type})");
+            TicketParser21.ParseTicket(ticket, reader);
+        }
+        else if (ticket.Version is { Major: 3, Minor: 0 })
+        {
+            TicketParser30.ParseTicket(ticket, reader);
+        }
+        else
+        {
+            throw new FormatException($"Unknown/unhandled ticket version {ticket.Version.Major}.{ticket.Version.Minor}");
         }
 
         ticket.SignatureIdentifier = reader.ReadTicketStringData(TicketDataType.Binary);
