@@ -8,6 +8,6 @@ public interface ITicketSigningKey
     string HashAlgorithm { get; }
     string CurveTable { get; }
     TicketSignatureMessageType MessageType { get; }
-    string CurveX { get; }
-    string CurveY { get; }
+    string PublicKeyX { get; }
+    string PublicKeyY { get; }
 }
