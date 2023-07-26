@@ -26,12 +26,5 @@ internal static class TicketParser21
         
         // Skip padding section in ticket
         reader.SkipTicketEmptyData(3);
-        
-        TicketDataSection footer = reader.ReadTicketSectionHeader();
-        if (footer.Type != TicketDataSectionType.Footer)
-        {
-            throw new FormatException($"Expected last section to be {nameof(TicketDataSectionType.Footer)}, " +
-                                      $"was really {footer.Type} ({(int)footer.Type})");
-        }
     }
 }

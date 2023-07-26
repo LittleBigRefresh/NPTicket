@@ -85,7 +85,12 @@ public class TicketReader : BinaryReader
     {
         long position = this.BaseStream.Position;
 
-        if (this.ReadByte() != 0x30) throw new FormatException("Expected 0x30 for section header");
+        byte sectionHeader = this.ReadByte();
+        if (sectionHeader != 0x30)
+        {
+            throw new FormatException($"Expected 0x30 for section header, was {sectionHeader}. Offset is {this.BaseStream.Position}");
+        }
+        
         TicketDataSectionType type = (TicketDataSectionType)this.ReadByte();
         ushort length = this.ReadUInt16();
 

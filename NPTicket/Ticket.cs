@@ -90,6 +90,13 @@ public class Ticket
         {
             throw new FormatException($"Unknown/unhandled ticket version {ticket.Version.Major}.{ticket.Version.Minor}");
         }
+        
+        TicketDataSection footer = reader.ReadTicketSectionHeader();
+        if (footer.Type != TicketDataSectionType.Footer)
+        {
+            throw new FormatException($"Expected last section to be {nameof(TicketDataSectionType.Footer)}, " +
+                                      $"was really {footer.Type} ({(int)footer.Type})");
+        }
 
         ticket.SignatureIdentifier = reader.ReadTicketStringData(TicketDataType.Binary);
         ticket.SignatureData = reader.ReadTicketBinaryData();
