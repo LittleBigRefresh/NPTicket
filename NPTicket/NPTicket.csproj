@@ -21,6 +21,6 @@
     </PropertyGroup>
     
     <ItemGroup>
-      <PackageReference Include="BouncyCastle.Cryptography" Version="2.2.1" />
+      <PackageReference Include="BouncyCastle.Cryptography" Version="2.3.0" />
     </ItemGroup>
 </Project>
